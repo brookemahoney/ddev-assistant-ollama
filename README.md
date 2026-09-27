@@ -7,7 +7,7 @@
 
 ## Overview
 
-This add-on integrates Assistant Ollama into your [DDEV](https://ddev.com/) project.
+This add-on integrates Ollama into the web container of your [DDEV](https://ddev.com/) project.
 
 ## Installation
 
@@ -23,25 +23,6 @@ After installation, make sure to commit the `.ddev` directory to version control
 | Command | Description |
 | ------- | ----------- |
 | `ddev describe` | View service status and used ports for Assistant Ollama |
-| `ddev logs -s assistant-ollama` | Check Assistant Ollama logs |
-
-## Advanced Customization
-
-To change the Docker image:
-
-```bash
-ddev dotenv set .ddev/.env.assistant-ollama --assistant-ollama-docker-image="ddev/ddev-utilities:latest"
-ddev add-on get brookemahoney/ddev-assistant-ollama
-ddev restart
-```
-
-Make sure to commit the `.ddev/.env.assistant-ollama` file to version control.
-
-All customization options (use with caution):
-
-| Variable | Flag | Default |
-| -------- | ---- | ------- |
-| `ASSISTANT_OLLAMA_DOCKER_IMAGE` | `--assistant-ollama-docker-image` | `ddev/ddev-utilities:latest` |
 
 ## Credits
 

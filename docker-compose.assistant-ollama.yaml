@@ -1,9 +1,6 @@
 #ddev-generated
 services:
-  assistant-ollama:
-    container_name: ddev-${DDEV_SITENAME}-assistant-ollama
-    image: ${ASSISTANT_OLLAMA_DOCKER_IMAGE:-ddev/ddev-utilities:latest}
-    command: ["sh", "-c", "trap exit TERM; sleep infinity & wait"]
+  web:
     restart: "no"
     # These labels ensure this service is discoverable by DDEV.
     labels:
