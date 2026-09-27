@@ -1,0 +1,18 @@
+#ddev-generated
+# Build stage for the Ollama runtime copied into the web image by
+# Dockerfile.assistant-ollama. Only a `prepend.Dockerfile.*` may declare an extra
+# FROM, because it is inserted above the FROM $BASE_IMAGE line DDEV generates.
+#
+# Ollama's own Linux release is one ~1.5 GB tarball that is almost entirely CUDA
+# and ROCm libraries, which a web container can never use because no GPU is passed
+# through to it. Fetching that tarball during `ddev restart` also means a
+# gigabyte-scale download from GitHub release assets on the critical path of every
+# project on the machine. This image carries the same CPU-only runtime in 68 MB
+# from the Docker registry, where BuildKit fetches it once per machine and every
+# project builds against the same cached layers.
+#
+# The image is built on Wolfi, which is glibc based, so its binaries run in the
+# glibc based DDEV web image; `ddev exec ollama --version` shows the version that
+# was installed. Bump the tag to pick up a newer Ollama, then `ddev restart
+# --no-cache` to rebuild.
+FROM alpine/ollama:latest AS ollama

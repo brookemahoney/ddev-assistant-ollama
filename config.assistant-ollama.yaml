@@ -1,0 +1,13 @@
+#ddev-generated
+hooks:
+  post-start:
+    # Starts `ollama serve` and waits for the API to answer, so Ollama is usable
+    # as soon as `ddev start` returns. The script is idempotent, so it is also
+    # the supported way to bring the server back after it has been stopped:
+    #
+    #   ddev exec ddev-ollama-start
+    #
+    # A failure here fails `ddev start` rather than warning, because a silently
+    # missing Ollama is harder to debug than a red `ddev start`; the error names
+    # the log to read.
+    - exec: "ddev-ollama-start"

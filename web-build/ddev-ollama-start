@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+#ddev-generated
+#
+# Start the Ollama server in the background inside the DDEV web container.
+#
+# Called by the add-on's post-start hook (see config.assistant-ollama.yaml) and
+# safe to run by hand at any time:
+#
+#   ddev exec ddev-ollama-start
+#
+# It is idempotent: if the API already answers, nothing is started.
+
+set -euo pipefail
+
+if ! command -v ollama >/dev/null 2>&1; then
+  echo "assistant-ollama: ollama is not in the web image. Run 'ddev restart' to rebuild it." >&2
+  exit 1
+fi
+
+# Defaults so that a bare `ollama` call in the web container works. Both are
+# ordinary environment variables, so a project can override them with
+# `web_environment` in .ddev/config.local.yaml, and the `ollama` CLI picks up
+# the same values.
+export OLLAMA_HOST="${OLLAMA_HOST:-0.0.0.0:11434}"
+export OLLAMA_MODELS="${OLLAMA_MODELS:-/mnt/ddev-global-cache/assistant-ollama/models}"
+
+readonly log_file="${OLLAMA_LOG_FILE:-/tmp/ollama.log}"
+readonly timeout="${OLLAMA_START_TIMEOUT:-30}"
+
+# The port is all the API probe needs; the host part is deliberately not used,
+# because 0.0.0.0 is a bind address, not something worth requesting.
+readonly host="${OLLAMA_HOST%%:*}"
+readonly port="${OLLAMA_HOST##*:}"
+
+# Anything other than a loopback address means the project points at a server
+# that is not this one, for example Ollama running on the host and reachable as
+# host.docker.internal. Starting a local server would just fight for the port.
+case "${host}" in
+# A bare port, Ollama's shorthand for 127.0.0.1, leaves host as digits.
+'' | 0.0.0.0 | 127.0.0.1 | localhost | :: | '[::]') ;;
+*[!0-9]*)
+  echo "assistant-ollama: OLLAMA_HOST=${OLLAMA_HOST} is not a local address, not starting Ollama."
+  exit 0
+  ;;
+esac
+
+api_answers() {
+  curl -fsS --max-time 2 "http://127.0.0.1:${port}/api/version" >/dev/null 2>&1
+}
+
+if api_answers; then
+  echo "assistant-ollama: Ollama is already running on port ${port}."
+  exit 0
+fi
+
+# The global cache is shared with every project on the machine, so a directory
+# left behind by a different user id is a realistic way for this to fail, and
+# `ollama pull` would then fail much later with no obvious cause.
+if ! mkdir -p "${OLLAMA_MODELS}" || [ ! -w "${OLLAMA_MODELS}" ]; then
+  echo "assistant-ollama: ${OLLAMA_MODELS} is not writable by $(id -un)." >&2
+  echo "assistant-ollama: set OLLAMA_MODELS to a writable path in .ddev/config.local.yaml, or fix it with:" >&2
+  echo "assistant-ollama:   ddev exec sudo chown -R \$(id -u):\$(id -g) ${OLLAMA_MODELS}" >&2
+  exit 1
+fi
+
+nohup ollama serve >>"${log_file}" 2>&1 </dev/null &
+
+# Wait for the API, so `ddev start` returns with Ollama already usable instead of
+# leaving the first request of a session to race the server.
+for ((i = 0; i < timeout; i++)); do
+  if api_answers; then
+    echo "assistant-ollama: Ollama is running, models in ${OLLAMA_MODELS}, log in ${log_file}."
+    exit 0
+  fi
+  sleep 1
+done
+
+echo "assistant-ollama: Ollama did not answer on port ${port} within ${timeout}s." >&2
+tail -n 20 "${log_file}" >&2 || true
+exit 1

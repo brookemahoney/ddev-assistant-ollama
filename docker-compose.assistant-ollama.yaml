@@ -1,12 +1,9 @@
 #ddev-generated
+# Ollama runs inside the web container itself, so there is no extra service to
+# define. DDEV already puts restart, labels and the ddev-global-cache mount on
+# the web service, and this override only adds what the add-on needs: a way to
+# see where the API is without reading the add-on's files.
 services:
   web:
-    restart: "no"
-    # These labels ensure this service is discoverable by DDEV.
-    labels:
-      com.ddev.site-name: ${DDEV_SITENAME}
-      com.ddev.approot: ${DDEV_APPROOT}
-
-    volumes:
-      - ".:/mnt/ddev_config"
-      - "ddev-global-cache:/mnt/ddev-global-cache"
+    x-ddev:
+      describe-info: "Ollama API: http://localhost:11434, http://web:11434 from other containers"

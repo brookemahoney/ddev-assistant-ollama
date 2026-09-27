@@ -1,6 +1,15 @@
 name: assistant-ollama
 
 project_files:
+  - web-build/prepend.Dockerfile.assistant-ollama
+  - web-build/Dockerfile.assistant-ollama
+  - web-build/ddev-ollama-start
+  - config.assistant-ollama.yaml
   - docker-compose.assistant-ollama.yaml
+
+post_install_actions:
+  - |
+    #ddev-description: Tell the developer the next start builds the web image
+    echo "Run 'ddev restart' to build the web image with Ollama installed."
 
 ddev_version_constraint: '>= v1.24.10'

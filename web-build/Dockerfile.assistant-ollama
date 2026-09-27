@@ -1,0 +1,20 @@
+#ddev-generated
+# Installs Ollama (https://ollama.com) into the DDEV web container, so the
+# `ollama` CLI and the Ollama API are usable there with no extra configuration.
+# The runtime itself comes from the `ollama` build stage declared in
+# prepend.Dockerfile.assistant-ollama.
+#
+# The layout matters. Ollama looks for the runner that executes a model
+# (llama-server) in ../lib/ollama relative to its own binary, so the binary goes
+# to /usr/local/bin/ollama and the runtime to /usr/local/lib/ollama, the same
+# layout Ollama's own Linux installer produces. /usr/local/bin is on $PATH for
+# every shell type: login shells, `ddev ssh`, and non-interactive `ddev exec`.
+COPY --from=ollama /usr/bin/ollama /usr/local/bin/ollama
+COPY --from=ollama /usr/lib/ollama /usr/local/lib/ollama
+COPY ddev-ollama-start /usr/local/bin/ddev-ollama-start
+
+# The 26 MB `ollama` binary serves the API and pulls models on its own, so a
+# missing runner is not obvious at install time: every request for a completion
+# fails instead. Assert it while building, where the message is actionable.
+RUN test -x /usr/local/lib/ollama/llama-server && \
+    chmod 0755 /usr/local/bin/ddev-ollama-start
